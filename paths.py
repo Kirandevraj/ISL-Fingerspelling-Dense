@@ -1,9 +1,9 @@
 """
 Everything this repo needs, resolved relative to this file.
 
-Checkpoints are not in git. They are pulled from HuggingFace on first use and cached
-in weights/ -- after that everything runs offline. Drop the files into weights/ by
-hand and nothing is downloaded at all.
+Checkpoints are not stored in git. They are downloaded from HuggingFace on first use
+and cached in weights/, after which everything runs offline. Placing the files in
+weights/ manually skips the download entirely.
 """
 
 import os
@@ -19,7 +19,7 @@ MODEL_REPO = "kirandevraj/ISL-Fingerspelling"  # HuggingFace model repo
 # Checkpoints
 # ---------------------------------------------------------------------------
 # "standard" = random train/test split; "signer" = signer-independent split
-# (no signer appears in both train and test, so it is the harder, more honest number).
+# (no signer appears in both train and test, making it the more demanding evaluation).
 
 CHECKPOINTS = {
     # Recognition: ResNet-18 + 2-layer BiLSTM + CTC head, trained with CTC loss
@@ -59,8 +59,8 @@ def resolve(key):
     """
     Path to a checkpoint, downloading it from HuggingFace on first use.
 
-    Set ISLFS_WEIGHTS to point at an existing directory of checkpoints, or drop the
-    files into weights/ yourself, to skip the download entirely.
+    Set ISLFS_WEIGHTS to an existing directory of checkpoints, or place the files in
+    weights/ manually, to skip the download.
     """
     path = CHECKPOINTS[key]
     if path.exists():
@@ -87,7 +87,7 @@ def resolve(key):
 
 
 def check():
-    """Print bundle status. Exit code 0 if everything needed is present."""
+    """Print repository status. Exit code 0 if all required files are present."""
     ok = True
     print(f"repo: {BUNDLE}\n")
     print(f"weights ({WEIGHTS})")
@@ -114,7 +114,7 @@ def check():
 
     try:
         import torch
-        print(f"\ndevice: {'cuda (' + torch.cuda.get_device_name(0) + ')' if torch.cuda.is_available() else 'cpu only -- inference works but is slow'}")
+        print(f"\ndevice: {'cuda (' + torch.cuda.get_device_name(0) + ')' if torch.cuda.is_available() else 'cpu only (inference is supported but slower)'}")
     except ImportError:
         pass
 

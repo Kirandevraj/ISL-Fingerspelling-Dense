@@ -76,12 +76,12 @@ clip001,clips/a.mp4,vijayabaskar
 clip002,clips/b.mp4,islamabad
 ```
 
-## ⚠️ Input must be signer-cropped
+## Input requirements
 
-Frames are resized straight to 224×224 with no letterboxing, because that is how the
-models were trained. Feeding wide, uncropped footage degrades accuracy badly — this is
-the single most common cause of nonsense output. The bundled samples show the expected
-framing: the signer fills the frame.
+Frames are resized directly to 224×224 with no letterboxing, matching the training
+preprocessing. Accuracy degrades substantially on wide, uncropped footage, which is the
+most common cause of poor results. The bundled samples illustrate the expected framing,
+in which the signer occupies most of the frame.
 
 Any format OpenCV can decode works; frame rate is read from the file.
 
@@ -97,14 +97,14 @@ Downloaded on demand from [HuggingFace](https://huggingface.co/kirandevraj/ISL-F
 | `frame_classifier_signer.pt` | 44.8 MB | Same, signer-independent split. |
 
 Recognition is 14.3M parameters. "Standard" is a random train/test split; "signer" is
-signer-independent — no signer appears in both train and test, so it is the harder and
-more honest number. Default is standard, matching the headline result.
+signer-independent — no signer appears in both train and test, making it the more
+demanding evaluation. The default is standard, matching the headline result.
 
 Localization scores every frame with the frame classifier, takes the max softmax as
 confidence, then: threshold ≥ 0.95 → merge regions separated by ≤ 0.3s → drop anything
 shorter than 0.5s. Those values were grid-searched on 10 held-out videos.
 
-To use your own checkpoints, drop them into `weights/` or set `ISLFS_WEIGHTS=/some/dir`.
+To use your own checkpoints, place them in `weights/` or set `ISLFS_WEIGHTS=/path/to/dir`.
 
 ## Reproducing the paper
 
@@ -125,8 +125,8 @@ python reproduce_paper.py --limit 20                        # quick check, small
 
 Downloads ~290 MB (standard) or ~700 MB (signer) of test video, cached after the first run.
 
-`--max-frames 200` matters: training capped sequences at 200 frames, subsampling longer
-clips linearly. Without it the numbers shift.
+`--max-frames 200` is required to match training, which capped sequences at 200 frames
+and subsampled longer clips linearly. Omitting it shifts the reported numbers.
 
 ### Localization (Table 3)
 
@@ -145,9 +145,9 @@ Frame counts: TP 22,252 / FP 4,622 / FN 3,708 against the paper's 22,505 / 4,447
 
 **This one needs full-length videos, which are not published.** The HuggingFace repo has
 the 1,308 pre-segmented clips; this evaluation runs over the 92 untrimmed source videos
-those segments were cut from, since the point is finding fingerspelling inside
-uncut footage. The ground truth is fetched from HuggingFace automatically; point
-`--video-dir` at the signer-cropped full videos. Contact the authors for access.
+those segments were cut from, as the task is to locate fingerspelling within uncut
+footage. The ground truth is fetched from HuggingFace automatically; set `--video-dir`
+to the directory of signer-cropped full videos. Contact the authors for access.
 
 Protocol, matching the original evaluation: score every frame, take a 10s window centred
 on each test segment, detect inside that window, count frames. Ground truth is the main
@@ -158,20 +158,20 @@ missed detections are penalised rather than skipped.
 
 ### Getting the numbers to match
 
-Three details have to follow the training code, and all three are handled by
+Three details must follow the training code. All three are handled by
 `reproduce_paper.py`:
 
 - **Corpus-level CER**, not per-clip — total edit distance over total reference
   characters. Per-clip averaging is printed alongside for reference.
 - **Ground truth from the letter annotations**, built as training built it: lowercase,
   keep `[a-z ]`, and **do not collapse or strip whitespace**. Word boundaries are not
-  always annotated as their own span, so normalising whitespace quietly changes the
-  reference. Scoring against the word-level transcripts instead gives ~6.1% / ~18.0%,
+  always annotated as their own span, so normalising whitespace alters the reference.
+  Scoring against the word-level transcripts instead gives ~6.1% / ~18.0%,
   since the two disagree on 83 of 1,308 segments.
 - **Spaces count** as characters in the edit distance.
 
-`evaluate.py` deliberately uses looser normalisation (spaces stripped) because it is meant
-for arbitrary user data — use `reproduce_paper.py` when comparing against the paper.
+`evaluate.py` applies looser normalisation (spaces stripped), as it is intended for
+arbitrary user data. Use `reproduce_paper.py` when comparing against the paper.
 
 ## Repository layout
 
@@ -189,12 +189,12 @@ for arbitrary user data — use `reproduce_paper.py` when comparing against the 
 
 ## Notes
 
-- **Localization fires on non-fingerspelling content.** That is the 78–85% precision in
-  Table 3, not a bug. Segments shorter than the 0.5s minimum are dropped entirely, which
-  is where recall is lost. Lower `--threshold` and `--min-duration` to trade precision
-  for recall.
+- **Localization produces false positives on non-fingerspelling content.** This is
+  reflected in the 78–85% precision reported in Table 3. Segments shorter than the 0.5s
+  minimum duration are discarded, which accounts for the loss in recall. Lower
+  `--threshold` and `--min-duration` to trade precision for recall.
 - **Two vocabularies.** The frame classifier has 27 outputs (space, a–z); the CTC models
-  have 28 (blank at index 0). Do not mix them.
+  have 28 (blank at index 0). The two are not interchangeable.
 - **RGB only.** The paper's keypoint (MLP-BiLSTM) variants need an RTMPose extraction step
   and are not included here.
 - **Inference only.** Training code is not part of this release.

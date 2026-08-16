@@ -15,9 +15,9 @@ Relative video paths are resolved against the CSV's own directory:
 Two aggregations are printed. The paper's numbers are corpus-level (total edits /
 total reference characters); per-clip averaging is shown alongside.
 
-This script strips spaces before scoring, which is the sane default for arbitrary
-user data. To compare against the publication use reproduce_paper.py, which matches
-the training code's metric exactly.
+This script strips spaces before scoring, an appropriate default for arbitrary user
+data. To compare against the publication, use reproduce_paper.py, which matches the
+training code's metric exactly.
 """
 
 import argparse

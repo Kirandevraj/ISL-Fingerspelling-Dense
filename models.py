@@ -1,7 +1,7 @@
 """
 Model definitions and loaders for ISL fingerspelling recognition and localization.
 
-Lifted verbatim (architecture and preprocessing) from the experiment code so that
+Architecture and preprocessing are reproduced from the original experiment code so that
 outputs match the paper:
   - TranscriptionModel  <- bilstm_experiment/flask_app/eval_scripts/detection_visualization/visualize_detection.py
   - FrameClassifier     <- bilstm_experiment/precompute_scores.py
@@ -70,7 +70,7 @@ def load_transcription_model(checkpoint_path, device="cuda"):
 
 
 def ctc_greedy_decode(logits):
-    """Collapse repeats, drop blanks. logits: (T, num_classes)"""
+    """Collapse repeated predictions and remove blanks. logits: (T, num_classes)"""
     pred_ids = F.softmax(logits, dim=-1).argmax(dim=-1).cpu().numpy()
     out, prev = [], -1
     for idx in pred_ids:
@@ -111,9 +111,9 @@ def read_frames(video_path, start_sec=None, end_sec=None, max_frames=None):
     """
     Decode a video (or a time slice of one) to a (T, 3, 224, 224) float tensor.
 
-    NOTE: frames are resized straight to 224x224 with no letterboxing, because the
-    models were trained on signer-cropped video. Feed uncropped footage and accuracy
-    collapses -- crop first -- see the README.
+    NOTE: frames are resized directly to 224x224 with no letterboxing, matching the
+    training preprocessing for signer-cropped video. Accuracy degrades substantially on
+    uncropped footage; crop the video first. See the README.
     """
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
