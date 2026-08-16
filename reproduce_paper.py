@@ -12,10 +12,8 @@ Downloads <https://huggingface.co/datasets/kirandevraj/ISL-Fingerspelling> (test
 videos only -- ~290 MB standard, ~700 MB signer) into the HuggingFace cache, then runs
 the same model `recognize.py` uses.
 
-Two ground-truth sources are reported, because they disagree:
-  letter  -- reconstructed from letter_annotations.json (the dense frame annotations)
-  word    -- fingerspelling_annotations.csv (the original word-level transcripts)
-They differ on 83 of 1,308 segments.
+Ground truth is reconstructed from letter_annotations.json, the dense frame
+annotations, exactly as the training code built its targets.
 
 The headline figure is corpus-level CER (total edits / total reference characters),
 matching what the training loop reported. Per-clip CER is printed alongside it for
@@ -47,10 +45,9 @@ def fetch_metadata(cache_dir=None):
         return hf_hub_download(REPO, name, repo_type="dataset", cache_dir=cache_dir)
 
     letters = json.load(open(grab("letter_annotations.json")))
-    words = {r["uid"]: r["text"] for r in csv.DictReader(open(grab("fingerspelling_annotations.csv")))}
     standard = {r["uid"]: r["split"] for r in csv.DictReader(open(grab("split_info.csv")))}
     signer = {r["uid"]: r["split"] for r in csv.DictReader(open(grab("signer_split.csv")))}
-    return letters, words, {"standard": standard, "signer": signer}
+    return letters, {"standard": standard, "signer": signer}
 
 
 VALID_CHARS = set("abcdefghijklmnopqrstuvwxyz ")
@@ -93,7 +90,7 @@ def main():
     print(f"split   : {args.split}\n")
 
     print("fetching annotations...")
-    letters, words, splits = fetch_metadata(args.cache_dir)
+    letters, splits = fetch_metadata(args.cache_dir)
     assign = splits[args.split]
 
     # letter_annotations.json is keyed by "<uid>.mp4" in some revisions, "<uid>" in others.
@@ -131,40 +128,35 @@ def main():
         rows.append({
             "uid": uid,
             "prediction": hyp,
-            "gt_letter": letter_text(by_uid[uid]),
-            "gt_word": words.get(uid, ""),
+            "ground_truth": letter_text(by_uid[uid]),
         })
 
     if not rows:
         print("\nno clips evaluated")
         return
 
-    def score(gt_key):
-        dists, lens = [], []
-        for r in rows:
-            # Spaces are kept, matching the training loop's compute_cer.
-            ref = r[gt_key].lower()
-            hyp = r["prediction"].lower()
-            if not ref:
-                continue
-            dists.append(editdistance.eval(ref, hyp))
-            lens.append(len(ref))
-        per_clip = sum(d / l for d, l in zip(dists, lens)) / len(dists)
-        corpus = sum(dists) / sum(lens)
-        exact = sum(1 for d in dists if d == 0)
-        return per_clip, corpus, exact, len(dists)
+    dists, lens = [], []
+    for r in rows:
+        # Spaces are kept, matching the training loop's compute_cer.
+        ref, hyp = r["ground_truth"].lower(), r["prediction"].lower()
+        if not ref:
+            continue
+        dists.append(editdistance.eval(ref, hyp))
+        lens.append(len(ref))
+
+    n = len(dists)
+    exact = sum(1 for d in dists if d == 0)
+    corpus = sum(dists) / sum(lens)
+    per_clip = sum(d / l for d, l in zip(dists, lens)) / n
 
     print(f"\n{'=' * 68}")
     print(f" Results -- {args.split} split, {len(rows)} clips" + (f" ({failed} failed)" if failed else ""))
     print(f"{'=' * 68}")
-    print(f"{'ground truth':<16}{'CER per-clip':>14}{'CER corpus':>13}{'exact':>14}")
-    for key, label in (("gt_letter", "letter annot."), ("gt_word", "word-level")):
-        per_clip, corpus, exact, n = score(key)
-        print(f"{label:<16}{per_clip:>13.2%}{corpus:>13.2%}{exact:>9} / {n}")
-
     # The training loop reports corpus-level CER (total edits / total reference
     # characters); that is the headline figure.
-    print(f"\ncorpus-level CER, letter annotations: {score('gt_letter')[1]:.2%}")
+    print(f"CER (corpus-level) : {corpus:.2%}   ({sum(dists)} edits / {sum(lens)} chars)")
+    print(f"CER (per-clip)     : {per_clip:.2%}")
+    print(f"exact matches      : {exact} / {n}  ({exact / n:.1%})")
     if args.limit:
         print(f"\n(subset of {args.limit} clips -- not the full test split)")
     elif args.max_frames is None:

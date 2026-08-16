@@ -117,7 +117,7 @@ python reproduce_paper.py --limit 20                        # quick check, small
 ```
 
 The script reports character error rate over the published test split, both corpus-level
-and averaged per clip, along with exact-match counts.
+and averaged per clip, along with the number of exact matches.
 
 Downloads ~290 MB (standard) or ~700 MB (signer) of test video, cached after the first run.
 
@@ -160,11 +160,6 @@ automatically by `reproduce_paper.py`:
   and **do not collapse or strip whitespace**. Word boundaries are not always annotated
   as their own character span, so normalising whitespace alters the reference text.
 - **Spaces count** as characters in the edit distance.
-
-`reproduce_paper.py` also scores against `fingerspelling_annotations.csv`, the
-word-level transcripts, and prints both. The two sources disagree on 83 of the 1,308
-segments, so the choice of reference changes the result; `letter_annotations.json` is
-the one that matches training.
 
 `evaluate.py` is a separate tool for arbitrary user videos and applies looser
 normalisation (spaces stripped), so its output is not directly comparable to
