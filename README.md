@@ -148,22 +148,27 @@ detection is not punished as a false positive. CER concatenates every detection
 overlapping the main segment; a segment with no overlapping detection scores CER 1.0, so
 missed detections are penalised rather than skipped.
 
-### Getting the numbers to match
+### How CER is computed in `reproduce_paper.py`
 
-Three details must follow the training code. All three are handled by
-`reproduce_paper.py`:
+Three details follow the original training code, and all three are handled
+automatically by `reproduce_paper.py`:
 
-- **Corpus-level CER**, not per-clip — total edit distance over total reference
-  characters. Per-clip averaging is printed alongside for reference.
-- **Ground truth from the letter annotations**, built as training built it: lowercase,
-  keep `[a-z ]`, and **do not collapse or strip whitespace**. Word boundaries are not
-  always annotated as their own span, so normalising whitespace alters the reference.
-  Scoring against the word-level transcripts instead gives ~6.1% / ~18.0%,
-  since the two disagree on 83 of 1,308 segments.
+- **Corpus-level CER**, not per-clip — total edit distance divided by total reference
+  characters. Per-clip averaging is printed alongside it for reference.
+- **Ground truth is taken from `letter_annotations.json`** (the dense frame
+  annotations) and rebuilt the way training built it: lowercase, keep only `[a-z ]`,
+  and **do not collapse or strip whitespace**. Word boundaries are not always annotated
+  as their own character span, so normalising whitespace alters the reference text.
 - **Spaces count** as characters in the edit distance.
 
-`evaluate.py` applies looser normalisation (spaces stripped), as it is intended for
-arbitrary user data. Use `reproduce_paper.py` to evaluate on the published test split.
+`reproduce_paper.py` also scores against `fingerspelling_annotations.csv`, the
+word-level transcripts, and prints both. The two sources disagree on 83 of the 1,308
+segments, so the choice of reference changes the result; `letter_annotations.json` is
+the one that matches training.
+
+`evaluate.py` is a separate tool for arbitrary user videos and applies looser
+normalisation (spaces stripped), so its output is not directly comparable to
+`reproduce_paper.py`.
 
 ## Repository layout
 
