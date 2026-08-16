@@ -1,0 +1,15 @@
+# Model weights are hosted on HuggingFace and fetched on first run (paths.py
+# creates this directory as needed).
+weights/
+
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Evaluation outputs
+reproduce_standard.csv
+reproduce_signer.csv
+localization_results.csv
+preds*.csv
+regions*.csv
+*.npy

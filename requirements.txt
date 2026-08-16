@@ -1,0 +1,18 @@
+# Inference dependencies. Pinned to the versions this bundle was verified against;
+# any reasonably recent torch >= 2.0 works.
+#
+# For CUDA, install torch from the matching index first, e.g.:
+#   pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+# then: pip install -r requirements.txt
+#
+# CPU-only also works -- inference is just slower.
+
+torch>=2.0
+torchvision>=0.15
+opencv-python-headless>=4.5
+editdistance>=0.6
+tqdm>=4.60
+numpy>=1.21
+
+# Only needed by reproduce_paper.py, which pulls the test set from HuggingFace.
+huggingface_hub>=0.20
