@@ -139,7 +139,7 @@ across 204 segments in 92 videos, together with the downstream character error r
 the 1,308 pre-segmented clips; this evaluation runs over the 92 untrimmed source videos
 those segments were cut from, as the task is to locate fingerspelling within uncut
 footage. The ground truth is fetched from HuggingFace automatically; set `--video-dir`
-to the directory of signer-cropped full videos. Contact the authors for access.
+to the directory of signer-cropped full videos.
 
 Protocol, matching the original evaluation: score every frame, take a 10s window centred
 on each test segment, detect inside that window, count frames. Ground truth is the main
