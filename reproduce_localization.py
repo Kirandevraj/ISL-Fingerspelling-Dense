@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Reproduce the paper's localization numbers (Table 3, "RGB Frame" row).
+Localization evaluation (Table 3, "RGB Frame" row).
 
     python reproduce_localization.py --video-dir /path/to/cropped_full_videos
     python reproduce_localization.py --video-dir ... --limit-videos 10   # quick check
@@ -42,9 +42,6 @@ from models import (compute_cer, frame_confidences, load_frame_classifier,
 
 REPO = "kirandevraj/ISL-Fingerspelling"
 WINDOW_SIZE = 10.0
-
-# Paper Table 3, RGB Frame classifier.
-PAPER = {"precision": 83.5, "recall": 85.7, "f1": 84.6, "cer": 11.5}
 
 
 def fetch_ground_truth(cache_dir=None):
@@ -210,14 +207,11 @@ def main():
     print(f"{'=' * 72}")
     print(f"{'':<14}{'precision':>12}{'recall':>10}{'F1':>10}{'CER':>10}")
     got_cer = "n/a" if mean_cer is None else f"{mean_cer:.1%}"
-    print(f"{'this run':<14}{precision:>11.1%}{recall:>10.1%}{f1:>10.1%}{got_cer:>10}")
-    print(f"{'paper':<14}{PAPER['precision']:>10.1f}%{PAPER['recall']:>9.1f}%"
-          f"{PAPER['f1']:>9.1f}%{PAPER['cer']:>9.1f}%")
+    print(f"{'result':<14}{precision:>11.1%}{recall:>10.1%}{f1:>10.1%}{got_cer:>10}")
     print(f"\nframe counts: TP {tot_tp}  FP {tot_fp}  FN {tot_fn}")
-    print(f"paper counts: TP 22505  FP 4447  FN 3769")
 
     if args.limit_videos:
-        print(f"\n(subset of {args.limit_videos} videos -- not comparable to the published number)")
+        print(f"\n(subset of {args.limit_videos} videos -- not the full evaluation set)")
 
     if args.out:
         with open(args.out, "w", newline="") as f:

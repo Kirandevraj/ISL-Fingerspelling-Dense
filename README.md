@@ -14,8 +14,6 @@ Two tasks:
 - **Recognition** — transcribe a pre-segmented fingerspelling clip into characters.
 - **Localization** — find fingerspelling regions inside a longer video, then transcribe them.
 
-Both published results reproduce from this repository (numbers below).
-
 ## Quick start
 
 ```bash
@@ -118,10 +116,8 @@ python reproduce_paper.py --max-frames 200 --split signer   # signer-independent
 python reproduce_paper.py --limit 20                        # quick check, small download
 ```
 
-| ResNet-BiLSTM (RGB), Frame+Word | paper | this code |
-|---|---|---|
-| Standard split, 204 clips | 4.87% CER | **4.43%** |
-| Signer-independent, 498 clips | 16.8% CER | **16.67%** |
+The script reports character error rate over the published test split, both corpus-level
+and averaged per clip, along with exact-match counts.
 
 Downloads ~290 MB (standard) or ~700 MB (signer) of test video, cached after the first run.
 
@@ -136,14 +132,10 @@ python reproduce_localization.py --video-dir ... --limit-videos 10   # quick che
 python reproduce_localization.py --video-dir ... --no-cer            # F1 only, faster
 ```
 
-| RGB Frame classifier | precision | recall | F1 | CER |
-|---|---|---|---|---|
-| paper | 83.5% | 85.7% | 84.6% | 11.5% |
-| this code (204 segments, 92 videos) | 82.8% | 85.7% | **84.2%** | **11.9%** |
+The script reports frame-level precision, recall and F1 for the RGB frame classifier
+across 204 segments in 92 videos, together with the downstream character error rate.
 
-Frame counts: TP 22,252 / FP 4,622 / FN 3,708 against the paper's 22,505 / 4,447 / 3,769.
-
-**This one needs full-length videos, which are not published.** The HuggingFace repo has
+**This evaluation requires full-length videos, which are not published.** The HuggingFace repo has
 the 1,308 pre-segmented clips; this evaluation runs over the 92 untrimmed source videos
 those segments were cut from, as the task is to locate fingerspelling within uncut
 footage. The ground truth is fetched from HuggingFace automatically; set `--video-dir`
@@ -171,7 +163,7 @@ Three details must follow the training code. All three are handled by
 - **Spaces count** as characters in the edit distance.
 
 `evaluate.py` applies looser normalisation (spaces stripped), as it is intended for
-arbitrary user data. Use `reproduce_paper.py` when comparing against the paper.
+arbitrary user data. Use `reproduce_paper.py` to evaluate on the published test split.
 
 ## Repository layout
 

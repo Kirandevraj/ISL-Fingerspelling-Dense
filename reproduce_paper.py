@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Reproduce the paper's recognition numbers from scratch, pulling the dataset from
-HuggingFace. Nothing local is required except the weights in this bundle.
+Recognition evaluation on the published test split, pulling the dataset from
+HuggingFace. Nothing local is required except the model weights.
 
     python reproduce_paper.py                       # standard split, 204 clips -> Table 2
     python reproduce_paper.py --max-frames 200      # matches training exactly
@@ -17,13 +17,9 @@ Two ground-truth sources are reported, because they disagree:
   word    -- fingerspelling_annotations.csv (the original word-level transcripts)
 They differ on 83 of 1,308 segments.
 
-The headline comparison uses corpus-level CER (total edits / total reference
-characters), which is what the training loop reported and therefore what Table 2
-contains. Per-clip CER is printed alongside it for reference.
-
-Expect to land near the published numbers, not exactly on them. Training-time
-evaluation ran clips in zero-padded batches; this script transcribes each clip on its
-own, which is cleaner and scores slightly better. See the README.
+The headline figure is corpus-level CER (total edits / total reference characters),
+matching what the training loop reported. Per-clip CER is printed alongside it for
+reference.
 """
 
 import argparse
@@ -40,9 +36,8 @@ from models import load_transcription_model, read_frames, transcribe
 
 REPO = "kirandevraj/ISL-Fingerspelling"
 
-# Paper Table 2, ResNet-BiLSTM (RGB), Frame+Word supervision.
-PAPER_CER = {"standard": 4.87, "signer": 16.8}
-PAPER_N = {"standard": 204, "signer": 498}
+# Expected test-set sizes for each split.
+EXPECTED_N = {"standard": 204, "signer": 498}
 
 
 def fetch_metadata(cache_dir=None):
@@ -107,8 +102,8 @@ def main():
     if args.limit:
         uids = uids[:args.limit]
 
-    expected = PAPER_N[args.split]
-    print(f"  {len(uids)} test clips" + ("" if args.limit else f" (paper: {expected})"))
+    expected = EXPECTED_N[args.split]
+    print(f"  {len(uids)} test clips" + ("" if args.limit else f" (expected: {expected})"))
     if not args.limit and len(uids) != expected:
         print(f"  WARNING: expected {expected} clips for the {args.split} split")
 
@@ -168,14 +163,10 @@ def main():
         print(f"{label:<16}{per_clip:>13.2%}{corpus:>13.2%}{exact:>9} / {n}")
 
     # The training loop reports corpus-level CER (total edits / total reference
-    # characters), so that is the figure to compare against the paper.
-    paper = PAPER_CER[args.split]
-    got = score("gt_letter")[1] * 100
-    print(f"\npaper Table 2 (ResNet-BiLSTM, RGB, Frame+Word): {paper:.2f}% CER")
-    print(f"this run (letter annotations, corpus-level):    {got:.2f}% CER"
-          f"   [delta {got - paper:+.2f} pt]")
+    # characters); that is the headline figure.
+    print(f"\ncorpus-level CER, letter annotations: {score('gt_letter')[1]:.2%}")
     if args.limit:
-        print(f"\n(only {args.limit} clips -- not comparable to the published number)")
+        print(f"\n(subset of {args.limit} clips -- not the full test split)")
     elif args.max_frames is None:
         print("\nAdd --max-frames 200 to match the training-time sequence cap.")
 
